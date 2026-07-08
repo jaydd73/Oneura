@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.Oneura" parent="Theme.MaterialComponents.Light" />
+</resources>
