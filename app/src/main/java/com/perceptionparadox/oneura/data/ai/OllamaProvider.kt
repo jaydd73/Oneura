@@ -10,7 +10,11 @@ class OllamaProvider(private val targetModel: String) : AiProvider {
     
     override val providerName: String = "Ollama (Local Server)"
 
-    override suspend fun generateResponse(prompt: String, systemPrompt: String): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun generateResponse(
+        prompt: String,
+        systemPrompt: String,
+        purpose: GenerationPurpose
+    ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val networkMessages = listOf(
                 NetworkMessage(role = "system", content = systemPrompt),

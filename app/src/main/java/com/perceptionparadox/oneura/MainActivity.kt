@@ -42,8 +42,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import kotlinx.coroutines.launch
 import com.perceptionparadox.oneura.data.ai.GeminiCloudProvider
+import com.perceptionparadox.oneura.data.ai.GenerationPurpose
 import com.perceptionparadox.oneura.data.ai.MediaPipeLocalProvider
 import com.perceptionparadox.oneura.data.ai.OllamaProvider
+import com.perceptionparadox.oneura.data.ai.XaiCloudProvider
+import com.perceptionparadox.oneura.data.ai.XaiModels
+import com.perceptionparadox.oneura.data.reflection.MetaReflection
+import com.perceptionparadox.oneura.data.reflection.MetaReflectionKind
 import com.perceptionparadox.oneura.data.local.OneuraDatabase
 import com.perceptionparadox.oneura.data.local.entity.ChatMessageEntity
 import com.perceptionparadox.oneura.data.local.entity.DreamEntity
@@ -89,6 +94,12 @@ class MainActivity : ComponentActivity() {
                         val currentProvider = settingsViewModel.aiProvider.value
                         when (currentProvider) {
                             "GEMINI" -> GeminiCloudProvider(settingsViewModel.geminiApiKey.value)
+                            "XAI" -> XaiCloudProvider(
+                                apiKey = settingsViewModel.xaiApiKey.value,
+                                companionModel = settingsViewModel.xaiCompanionModel.value,
+                                backgroundModel = settingsViewModel.xaiBackgroundModel.value,
+                                timeoutSeconds = settingsViewModel.timeoutSeconds.value
+                            )
                             "MEDIAPIPE" -> MediaPipeLocalProvider(context, "/data/user/0/com.perceptionparadox.oneura/files/model.bin")
                             else -> OllamaProvider(settingsViewModel.modelName.value)
                         }
@@ -498,6 +509,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val isScanning by viewModel.isScanning.collectAsState()
     val aiProvider by viewModel.aiProvider.collectAsState()
     val geminiKey by viewModel.geminiApiKey.collectAsState()
+    val xaiKey by viewModel.xaiApiKey.collectAsState()
+    val xaiCompanion by viewModel.xaiCompanionModel.collectAsState()
+    val xaiBackground by viewModel.xaiBackgroundModel.collectAsState()
 
     Column(
         modifier = Modifier
@@ -508,11 +522,16 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     ) {
         Text("Brain Source", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
         
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = aiProvider == "GEMINI",
                 onClick = { viewModel.setAiProvider("GEMINI") },
                 label = { Text("Cloud") }
+            )
+            FilterChip(
+                selected = aiProvider == "XAI",
+                onClick = { viewModel.setAiProvider("XAI") },
+                label = { Text("Grok") }
             )
             FilterChip(
                 selected = aiProvider == "MEDIAPIPE",
@@ -574,6 +593,107 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     ) {
                         if (testing) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                         else Text("Test Cloud Brain")
+                    }
+                    if (testResult.isNotEmpty()) {
+                        Text(
+                            text = testResult,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (testResult.contains("ONLINE")) Color.Green else Color.Red,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        if (aiProvider == "XAI") {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("xAI (Grok)", fontWeight = FontWeight.Bold)
+                    Text(
+                        "Paste your own key from console.x.ai. It stays in local app storage on this device and is sent only as the Authorization header to api.x.ai.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedTextField(
+                        value = xaiKey,
+                        onValueChange = { viewModel.setXaiKey(it) },
+                        label = { Text(if (xaiKey.isNotEmpty()) "Key stored (${xaiKey.length} chars)" else "Paste xAI API key") },
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        singleLine = true,
+                        trailingIcon = {
+                            if (xaiKey.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.setXaiKey("") }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear Key")
+                                }
+                            }
+                        }
+                    )
+                    OutlinedTextField(
+                        value = xaiCompanion,
+                        onValueChange = { viewModel.setXaiCompanionModel(it.replace("\n", "").replace("\r", "")) },
+                        label = { Text("Companion model") },
+                        placeholder = { Text(XaiModels.DEFAULT_COMPANION) },
+                        supportingText = { Text("Chat replies. Default ${XaiModels.DEFAULT_COMPANION}.") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = xaiBackground,
+                        onValueChange = { viewModel.setXaiBackgroundModel(it.replace("\n", "").replace("\r", "")) },
+                        label = { Text("Background model") },
+                        placeholder = { Text(XaiModels.DEFAULT_BACKGROUND) },
+                        supportingText = {
+                            Text("Inner voice, dreams, and meta reflection. Default ${XaiModels.DEFAULT_BACKGROUND}.")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Text(
+                        "grok-4-1-fast was retired in May 2026 and redirects to grok-4.3. Leave a field blank to use its default. Avoid grok-beta, grok-2, grok-3, and grok-latest.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    if (XaiModels.isDiscouraged(xaiCompanion) || XaiModels.isDiscouraged(xaiBackground)) {
+                        Text(
+                            "One of these model ids is retired or discouraged. grok-4.6 and grok-4.3 are the current defaults.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    var testResult by remember { mutableStateOf("") }
+                    var testing by remember { mutableStateOf(false) }
+                    val scope = rememberCoroutineScope()
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                testing = true
+                                testResult = "Testing Grok..."
+                                val provider = XaiCloudProvider(
+                                    apiKey = xaiKey,
+                                    companionModel = xaiCompanion,
+                                    backgroundModel = xaiBackground,
+                                    timeoutSeconds = timeout
+                                )
+                                val result = provider.generateResponse(
+                                    "Ping",
+                                    "Reply with the single word Online.",
+                                    GenerationPurpose.COMPANION
+                                )
+                                testResult = result.fold(
+                                    onSuccess = { "Grok: ONLINE" },
+                                    onFailure = { it.message ?: "Failed" }
+                                )
+                                testing = false
+                            }
+                        },
+                        enabled = xaiKey.isNotEmpty() && !testing,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (testing) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        else Text("Test Grok")
                     }
                     if (testResult.isNotEmpty()) {
                         Text(
@@ -674,14 +794,29 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("System Info", fontWeight = FontWeight.Bold)
-                if (aiProvider == "GEMINI") {
-                    Text("Brain: Gemini 1.5 Flash (Cloud)", style = MaterialTheme.typography.bodySmall)
-                    Text("API Key: ${if(geminiKey.length > 5) geminiKey.take(4) + "..." + geminiKey.takeLast(4) else "Missing"}", style = MaterialTheme.typography.bodySmall)
-                } else if (aiProvider == "OLLAMA") {
-                    Text("Brain: Local Server ($modelName)", style = MaterialTheme.typography.bodySmall)
-                    Text("Address: $baseUrl", style = MaterialTheme.typography.bodySmall)
-                } else {
-                    Text("Brain: On-Device (Private)", style = MaterialTheme.typography.bodySmall)
+                when (aiProvider) {
+                    "GEMINI" -> {
+                        Text("Brain: Gemini 1.5 Flash (Cloud)", style = MaterialTheme.typography.bodySmall)
+                        Text("API Key: ${if(geminiKey.length > 5) geminiKey.take(4) + "..." + geminiKey.takeLast(4) else "Missing"}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    "XAI" -> {
+                        val companion = xaiCompanion.ifBlank { XaiModels.DEFAULT_COMPANION }
+                        val background = xaiBackground.ifBlank { XaiModels.DEFAULT_BACKGROUND }
+                        Text("Brain: xAI Grok", style = MaterialTheme.typography.bodySmall)
+                        Text("Chat model: $companion", style = MaterialTheme.typography.bodySmall)
+                        Text("Background model: $background", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "API key: ${if (xaiKey.isNotEmpty()) "stored on this device" else "missing"}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    "OLLAMA" -> {
+                        Text("Brain: Local Server ($modelName)", style = MaterialTheme.typography.bodySmall)
+                        Text("Address: $baseUrl", style = MaterialTheme.typography.bodySmall)
+                    }
+                    else -> {
+                        Text("Brain: On-Device (Private)", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
                 Text("Status: ${if (isScanning) "Scanning..." else "Standby"}", style = MaterialTheme.typography.bodySmall, color = if (isScanning) Color.Cyan else Color.Green)
             }
@@ -782,6 +917,11 @@ fun ChatScreen(viewModel: ChatViewModel) {
 @Composable
 fun ReflectionScreen(viewModel: BrainViewModel) {
     val reflections by viewModel.reflections.collectAsState()
+    val isReflecting by viewModel.isReflecting.collectAsState()
+    val reflectionError by viewModel.reflectionError.collectAsState()
+    val strategy = reflections.firstOrNull {
+        MetaReflection.kindOf(it.triggerSource) == MetaReflectionKind.STRATEGY_SHIFT
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -794,14 +934,52 @@ fun ReflectionScreen(viewModel: BrainViewModel) {
             GlowingOrb()
             Button(
                 onClick = { viewModel.reflect() },
+                enabled = !isReflecting,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
             ) {
-                Text("Trigger Reflection")
+                Text(if (isReflecting) "Reflecting..." else "Trigger Reflection")
             }
         }
-        
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-            items(reflections) { reflection ->
+        Text(
+            text = "Meta reflection runs every ${MetaReflection.EVERY_N_TURNS} of your messages, and when you tap the button. It is saved here and folded into later replies.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        reflectionError?.let { message ->
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+        if (strategy != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Current strategy", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        text = MetaReflection.strategyLine(strategy.content),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+
+        if (reflections.isEmpty()) {
+            Text(
+                text = "No reflections yet. Inner voice notes appear after Oneura replies. A meta reflection appears every ${MetaReflection.EVERY_N_TURNS} messages, or when you tap Trigger Reflection.",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
+            items(reflections, key = { it.id }) { reflection ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -809,13 +987,21 @@ fun ReflectionScreen(viewModel: BrainViewModel) {
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
                     border = CardDefaults.outlinedCardBorder()
                 ) {
-                    Text(
-                        text = reflection.content,
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            shadow = Shadow(color = MaterialTheme.colorScheme.primary, blurRadius = 2f)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = MetaReflection.displayLabel(reflection.triggerSource),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
                         )
-                    )
+                        Text(
+                            text = reflection.content,
+                            modifier = Modifier.padding(top = 6.dp),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                shadow = Shadow(color = MaterialTheme.colorScheme.primary, blurRadius = 2f)
+                            )
+                        )
+                    }
                 }
             }
         }

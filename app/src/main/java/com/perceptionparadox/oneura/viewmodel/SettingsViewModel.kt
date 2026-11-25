@@ -47,6 +47,24 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         initialValue = ""
     )
 
+    val xaiApiKey: StateFlow<String> = repository.xaiApiKey.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = ""
+    )
+
+    val xaiCompanionModel: StateFlow<String> = repository.xaiCompanionModel.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = ""
+    )
+
+    val xaiBackgroundModel: StateFlow<String> = repository.xaiBackgroundModel.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = ""
+    )
+
     init {
         viewModelScope.launch {
             combine(repository.baseUrl, repository.timeoutSeconds) { url, timeout ->
@@ -75,6 +93,18 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun setGeminiKey(key: String) {
         viewModelScope.launch { repository.saveGeminiKey(key) }
+    }
+
+    fun setXaiKey(key: String) {
+        viewModelScope.launch { repository.saveXaiKey(key) }
+    }
+
+    fun setXaiCompanionModel(model: String) {
+        viewModelScope.launch { repository.saveXaiCompanionModel(model) }
+    }
+
+    fun setXaiBackgroundModel(model: String) {
+        viewModelScope.launch { repository.saveXaiBackgroundModel(model) }
     }
 
     fun runSmartDiscovery() {

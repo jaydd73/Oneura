@@ -16,9 +16,19 @@ class SettingsRepository(private val context: Context) {
     private val timeoutKey = longPreferencesKey("timeout_seconds")
     private val aiProviderKey = stringPreferencesKey("ai_provider")
     private val geminiApiKey = stringPreferencesKey("gemini_api_key")
+    private val xaiApiKeyKey = stringPreferencesKey("xai_api_key")
+    private val xaiCompanionModelKey = stringPreferencesKey("xai_companion_model")
+    private val xaiBackgroundModelKey = stringPreferencesKey("xai_background_model")
 
     val aiProvider: Flow<String> = context.dataStore.data.map { it[aiProviderKey] ?: "GEMINI" }
     val geminiApi: Flow<String> = context.dataStore.data.map { it[geminiApiKey] ?: "" }
+    val xaiApiKey: Flow<String> = context.dataStore.data.map { it[xaiApiKeyKey] ?: "" }
+    val xaiCompanionModel: Flow<String> = context.dataStore.data.map {
+        (it[xaiCompanionModelKey] ?: "").trim()
+    }
+    val xaiBackgroundModel: Flow<String> = context.dataStore.data.map {
+        (it[xaiBackgroundModelKey] ?: "").trim()
+    }
 
     val baseUrl: Flow<String> = context.dataStore.data.map { 
         var url = (it[baseUrlKey] ?: "http://127.0.0.1:11434/").trim()
@@ -49,5 +59,17 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun saveGeminiKey(key: String) {
         context.dataStore.edit { it[geminiApiKey] = key.trim() }
+    }
+
+    suspend fun saveXaiKey(key: String) {
+        context.dataStore.edit { it[xaiApiKeyKey] = key.trim() }
+    }
+
+    suspend fun saveXaiCompanionModel(model: String) {
+        context.dataStore.edit { it[xaiCompanionModelKey] = model.trim() }
+    }
+
+    suspend fun saveXaiBackgroundModel(model: String) {
+        context.dataStore.edit { it[xaiBackgroundModelKey] = model.trim() }
     }
 }

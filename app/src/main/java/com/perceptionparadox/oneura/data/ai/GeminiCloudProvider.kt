@@ -10,7 +10,11 @@ class GeminiCloudProvider(private val apiKey: String) : AiProvider {
     
     override val providerName: String = "Gemini Cloud"
 
-    override suspend fun generateResponse(prompt: String, systemPrompt: String): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun generateResponse(
+        prompt: String,
+        systemPrompt: String,
+        purpose: GenerationPurpose
+    ): Result<String> = withContext(Dispatchers.IO) {
         val cleanKey = apiKey.trim()
         
         if (cleanKey.isBlank()) {
