@@ -425,10 +425,10 @@ fun DreamCard(dream: DreamEntity) {
 fun DreamStageVisual(stage: String) {
     // The Antigravity copy resolved these by name at runtime inside try/catch. try/catch around
     // composable calls doesn't compile, and the drawables now ship with the app, so use R directly.
-    // TODO: no dedicated REM artwork exists yet; REM reuses dream_deep (same as the Antigravity copy).
     val resId = when (stage.uppercase()) {
         "LIGHT" -> R.drawable.dream_light
-        "DEEP", "REM" -> R.drawable.dream_deep
+        "DEEP" -> R.drawable.dream_deep
+        "REM" -> R.drawable.dream_rem
         else -> null
     }
     if (resId != null) {
