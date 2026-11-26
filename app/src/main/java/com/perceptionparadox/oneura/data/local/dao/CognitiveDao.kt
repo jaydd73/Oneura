@@ -22,6 +22,9 @@ interface CognitiveDao {
     @Query("SELECT * FROM chat_messages ORDER BY timestamp DESC LIMIT :limit")
     suspend fun recent(limit: Int): List<ChatMessageEntity>
 
+    @Query("SELECT COUNT(*) FROM chat_messages WHERE sender = 'USER'")
+    suspend fun countUserMessages(): Int
+
     // Reflection Operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReflection(reflection: ReflectionEntity)

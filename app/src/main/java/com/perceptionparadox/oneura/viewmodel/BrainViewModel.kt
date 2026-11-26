@@ -30,9 +30,21 @@ class BrainViewModel(private val repository: CognitiveRepository) : ViewModel() 
     private val _isDreaming = MutableStateFlow(false)
     val isDreaming: StateFlow<Boolean> = _isDreaming.asStateFlow()
 
+    private val _isReflecting = MutableStateFlow(false)
+    val isReflecting: StateFlow<Boolean> = _isReflecting.asStateFlow()
+
+    private val _reflectionError = MutableStateFlow<String?>(null)
+    val reflectionError: StateFlow<String?> = _reflectionError.asStateFlow()
+
     fun reflect() {
-        // TODO: intent unclear in all three copies (empty stub everywhere). Could trigger a manual
-        // deep-reflection session via the repository; left as a no-op.
+        if (_isReflecting.value) return
+        viewModelScope.launch {
+            _isReflecting.value = true
+            _reflectionError.value = null
+            val result = repository.runMetaReflection()
+            _reflectionError.value = result.exceptionOrNull()?.message
+            _isReflecting.value = false
+        }
     }
 
     fun dream() {

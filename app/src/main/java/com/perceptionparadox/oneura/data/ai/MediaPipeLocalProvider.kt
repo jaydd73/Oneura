@@ -22,7 +22,11 @@ class MediaPipeLocalProvider(private val context: Context, private val modelPath
         }
     }
 
-    override suspend fun generateResponse(prompt: String, systemPrompt: String): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun generateResponse(
+        prompt: String,
+        systemPrompt: String,
+        purpose: GenerationPurpose
+    ): Result<String> = withContext(Dispatchers.IO) {
         val inference = llmInference ?: return@withContext Result.failure(Exception("Local Brain not downloaded yet."))
         
         try {
