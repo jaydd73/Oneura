@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Oneura</title>
+  <link rel="stylesheet" href="/web/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1>ONEURA</h1>
+      <button id="clear-chat" class="icon-button" type="button" hidden aria-label="Clear chat">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M9 7V5h6v2m-7 0 1 12h6l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </header>
+    <main id="screen" class="screen"></main>
+    <form id="composer" class="composer" hidden>
+      <label class="sr-only" for="chat-input">Message</label>
+      <input id="chat-input" type="text" placeholder="Think about something..." autocomplete="off">
+      <button id="send-button" type="submit" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-2.5-6.5L4 12z" fill="currentColor"/></svg>
+      </button>
+    </form>
+    <nav class="tabbar" aria-label="Sections">
+      <button type="button" data-tab="chat" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14v9H8l-3 3V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Chat</span>
+      </button>
+      <button type="button" data-tab="reflections">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M8 14a5 5 0 1 1 8 0c-.8.8-1.5 1.6-1.7 3H9.7c-.2-1.4-.9-2.2-1.7-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Reflections</span>
+      </button>
+      <button type="button" data-tab="dreams">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 13a5 5 0 0 0-8.5-4.6A4 4 0 1 0 7 16h9a3.5 3.5 0 0 0 0-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Dreams</span>
+      </button>
+      <button type="button" data-tab="settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M18 6l-1.6 1.6M7.6 16.4 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Settings</span>
+      </button>
+      <button type="button" data-tab="logs">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10M7 12h10M7 17h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Logs</span>
+      </button>
+    </nav>
+  </div>
+  <script src="/web/app.js"></script>
+</body>
+</html>
